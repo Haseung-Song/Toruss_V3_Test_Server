@@ -1,0 +1,200 @@
+﻿<Window x:Class="Toruss_V3_Test_Server.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="TCP_Test_Server"
+        Width="1110"
+        Height="610"
+        xmlns:local1="clr-namespace:ByteToHexStrConverter"
+        xmlns:local2="clr-namespace:ByteArrayToHexStrConverter"
+        xmlns:local3="clr-namespace:AutoScrollViewer"
+        xmlns:local4="clr-namespace:ByteToDecimalStrConverter"
+        xmlns:local5="clr-namespace:ByteArrayToDecimalStrConverter"
+        xmlns:viewmodels="clr-namespace:Toruss_V3_Test_Server.ViewModels"
+        d:DataContext="{d:DesignInstance Type=viewmodels:MainVM}"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <local1:ByteToHexStrConverter x:Key="ByteToHexStrConverter"/>
+        <local2:ByteArrayToHexStrConverter x:Key="ByteArrayToHexStrConverter"/>
+        <local4:ByteToDecimalStrConverter x:Key="ByteToDecimalStrConverter"/>
+        <local5:ByteArrayToDecimalStrConverter x:Key="ByteArrayToDecimalStrConverter"/>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="8*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1.5*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Border Grid.Column="0">
+            <StackPanel Margin="10">
+                <TextBlock Text="IP"
+                           TextAlignment="Left"
+                           Background="AntiqueWhite"
+                           HorizontalAlignment="Stretch"
+                           FontSize="15"
+                           FontWeight="Bold"
+                           Margin="0,0,0,8"/>
+                <TextBox   Text="{Binding IpAddress, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                           BorderBrush="DarkOrange"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Column="1"
+                Margin="10">
+            <StackPanel Margin="0">
+                <TextBlock Text="Port"
+                           TextAlignment="Left"
+                           Background="AntiqueWhite"
+                           HorizontalAlignment="Stretch"
+                           FontSize="15"
+                           FontWeight="Bold"
+                           Margin="0,0,0,8"/>
+                <TextBox   Text="{Binding Port, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                           BorderBrush="DarkOrange"/>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1"
+                Grid.ColumnSpan="2"
+                BorderThickness="2"
+                BorderBrush="DarkSeaGreen"
+                Margin="10,5,10,5">
+            <Grid Margin="5">
+                <Grid>
+                    <ListView ItemsSource="{Binding DisplayInfo}"
+                              HorizontalAlignment="Stretch"
+                              local3:AutoScrollViewer.AutoScroll="False"
+                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.View>
+                            <GridView>
+
+                                <!-- Description 문자열 출력 -->
+                                <GridViewColumn Header="Description" Width="250">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Description, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                       TextAlignment="Center"
+                                                       FontSize="12"
+                                                       Foreground="DarkGreen"
+                                                       FontWeight="Bold"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <!-- 수신 데이터(MessageListen) 출력 -->
+                                <GridViewColumn Header="Receive Data" Width="300">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding MessageListen, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                       TextAlignment="Center"
+                                                       FontSize="12"
+                                                       Foreground="DarkRed"
+                                                       FontWeight="Bold"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <!-- 기존 Parser용 HEX Field 컬럼 보존
+                                <GridViewColumn Header="Field 1 (Hex)" Width="250">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock TextAlignment="Left"
+                                                       FontSize="12"
+                                                       Foreground="DarkBlue"
+                                                       FontWeight="Bold">
+                                                <TextBlock.Text>
+                                                    <MultiBinding StringFormat="{}[{0:HH:mm:ss}] {1} {2}">
+                                                        <Binding Path="CurrentTime"/>             
+                                                        [MessageByte : 단일 바이트 값, 16진수 변환]
+                                                        <Binding Path="MessageByte" Converter="{StaticResource ByteToHexStrConverter}"/> 
+                                                        [MessageBytes : 바이트 배열 값, 16진수 변환]
+                                                        <Binding Path="MessageBytes" Converter="{StaticResource ByteArrayToHexStrConverter}"/>
+                                
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn Header="Field 2 (Decimal)" Width="250">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock TextAlignment="Left"
+                                                       FontSize="12"
+                                                       Foreground="DarkMagenta"
+                                                       FontWeight="Bold">
+                                                <TextBlock.Text>
+                                                    <MultiBinding StringFormat="{}[{0:HH:mm:ss}] {1} {2}">
+                                                        <Binding Path="CurrentTime"/>
+                                                        [MessageByte : 단일 바이트 값, 10진수 변환]
+                                                        <Binding Path="MessageByte" Converter="{StaticResource ByteToDecimalStrConverter}"/>
+                                                        [MessageBytes : 바이트 배열 값, 10진수 변환]
+                                                        <Binding Path="MessageBytes" Converter="{StaticResource ByteArrayToDecimalStrConverter}"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                -->
+
+                                <!-- TCP 수신 시간 표시 컬럼 -->
+                                <GridViewColumn Header="Receive Time" Width="200">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding CurrentTime}"
+                                                       TextAlignment="Center"
+                                                       FontSize="12"
+                                                       Foreground="DarkBlue"
+                                                       FontWeight="Bold"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <!-- TCP 수신 HEX Packet 표시 컬럼 -->
+                                <GridViewColumn Header="Packet (Hex)" Width="300">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding MessageByte}"
+                                                       TextAlignment="Center"
+                                                       FontSize="12"
+                                                       Foreground="Purple"
+                                                       FontWeight="Bold"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="2"
+                Grid.ColumnSpan="2"
+                Margin="10,5,10,5">
+            <StackPanel Margin="5">
+                <Button Content="{Binding InitStop_BtnText}"
+                        Command="{Binding InitAndStopServerCommand}"
+                        Background="DarkTurquoise"
+                        Height="25"
+                        Width="100"/>
+            </StackPanel>
+        </Border>
+
+    </Grid>
+</Window>
