@@ -4,12 +4,12 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using Toruss_V3_Test_Server.Common;
 using Toruss_V3_Test_Server.Models;
 using Toruss_V3_Test_Server.Services;
-
 using static Toruss_V3_Test_Server.Models.Parser;
 
 namespace Toruss_V3_Test_Server.ViewModels
@@ -22,8 +22,13 @@ namespace Toruss_V3_Test_Server.ViewModels
 
         private string _ipAddress;
         private int _port;
+
         private ObservableCollection<DisplayInfo> _displayInfo;
+
         private bool _IsStartBtnEnabled;
+        private bool _isSendTestRunning;
+
+        private Task _sendTask;
 
         #endregion
 
@@ -120,6 +125,8 @@ namespace Toruss_V3_Test_Server.ViewModels
 
         public ICommand InitAndStopServerCommand { get; set; }
 
+        public ICommand SendClientAndTestCommand { get; set; }
+
         #endregion
 
         #region 생성자 (Initialize)
@@ -130,7 +137,9 @@ namespace Toruss_V3_Test_Server.ViewModels
             _ipAddress = IPAddress.Loopback.ToString();
             _port = 2000;
             _displayInfo = new ObservableCollection<DisplayInfo>();
+
             InitAndStopServerCommand = new RelayCommand(InitAndStop);
+            SendClientAndTestCommand = new RelayCommand(SendAndTest);
         }
 
         #endregion
@@ -153,6 +162,122 @@ namespace Toruss_V3_Test_Server.ViewModels
                 _tcpService.MessageReceived -= OnMessageReceived; // 이벤트 해제
                 _tcpService.TcpStop();
                 Console.WriteLine("TCP Server Stopped...");
+            }
+
+        }
+
+        /// <summary>
+        /// [Server -> Client] [TEST]: Packet 송신
+        /// </summary>
+        private void SendAndTest()
+        {
+            try
+            {
+                // 이미 실행 중이라면, 중지하기
+                if (_isSendTestRunning)
+                {
+                    _isSendTestRunning = false;
+
+                    Console.WriteLine("[TCP TEST SEND] STOP");
+                    return;
+                }
+
+                // TCP Server 실행 여부 확인
+                if (_tcpService == null)
+                {
+                    MessageBox.Show(
+                    "TCP Server를 먼저 시작해주세요.",
+                    "TCP Warning",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                    return;
+                }
+
+                _isSendTestRunning = true;
+
+                Console.WriteLine("[TCP TEST SEND] START");
+
+#if false // [HEX Packet] [TEST] 데이터
+                byte[] packet =
+                {
+                    0x02,
+                    0x88,
+                    0x36,
+                    0xBB,
+                    0xAA,
+                    0xD8,
+                    0x10,
+                    0x0E,
+                    0x54,
+                    0x2D,
+                    0x50,
+                    0x03
+                };
+#endif
+                // 반복 송신 Task 시작
+                _sendTask = Task.Run(async () =>
+                {
+                    Random random = new Random();
+
+                    while (_isSendTestRunning)
+                    {
+                        // 랜덤 Packet 생성
+                        byte[] packet = new byte[12];
+
+                        // STX(시작 Data)
+                        packet[0] = 0x02;
+
+                        // Random Data
+                        for (int i = 1; i < packet.Length - 1; i++)
+                        {
+                            packet[i] = (byte)random.Next(0, 256);
+                        }
+
+                        // ETX(종료 Data)
+                        packet[packet.Length - 1] = 0x03;
+
+                        // [Client 측]으로 Packet 송신
+                        bool result = _tcpService.SendToClient(packet);
+
+                        if (!result)
+                        {
+                            // 반복 송신 종료 상태 변경
+                            _isSendTestRunning = false;
+
+                            MessageBox.Show(
+                            "연결된 Client가 없습니다.",
+                            "TCP Warning",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Warning);
+
+                            return;
+                        }
+
+                        // 송신 Packet [HEX 문자열] 변환
+                        string hex = BitConverter.ToString(packet).Replace("-", " ");
+
+                        // [HEX DATA] [Console]로 출력
+                        Console.WriteLine($"[TCP SEND] {hex}");
+
+                        // [300ms] 대기
+                        await Task.Delay(300);
+                    }
+
+                });
+
+            }
+            catch (Exception ex)
+            {
+                // [Console Error Log] 출력
+                Console.WriteLine($"[TCP SEND ERROR] {ex.Message}");
+
+                // 송신 실패 예외 출력
+                MessageBox.Show(
+                $"TCP Send Failed\n\n{ex.Message}",
+                "TCP ERROR",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
             }
 
         }

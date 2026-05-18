@@ -3,12 +3,12 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace Toruss_V3_Test_Server.Services
 {
     /// <summary>
-    /// [TcpService] 클래스
-    /// TCP Server 역할을 담당하는 서비스 클래스
+    /// [TcpService]: [TCP Server] 역할을 담당하는 서비스 클래스
     /// </summary>
     public class TcpService
     {
@@ -37,8 +37,7 @@ namespace Toruss_V3_Test_Server.Services
         }
 
         /// <summary>
-        /// [TcpStart()]
-        /// TCP 서버 시작
+        /// [TcpStart()]: TCP 서버 시작
         /// </summary>
         public async void TcpStart()
         {
@@ -82,6 +81,58 @@ namespace Toruss_V3_Test_Server.Services
             catch (Exception ex)
             {
                 Debug.WriteLine(ex.ToString());
+            }
+
+        }
+
+        /// <summary>
+        /// [Server -> Client] Packet 송신
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public bool SendToClient(byte[] data)
+        {
+            try
+            {
+                // Client 연결 여부 확인
+                if (_tcpClient == null || !_tcpClient.Connected)
+                {
+                    return false;
+                }
+
+                NetworkStream stream = _tcpClient.GetStream(); // NetworkStream 가져오기
+
+                if (stream == null || !stream.CanWrite)
+                {
+                    return false;
+                }
+                // data 배열의 0번 인덱스부터 data.Length 개수만큼
+                // NetworkStream을 통해 상대방(Client)에게 전송함!
+                // 1. [buffer]: 보낼 byte 배열
+                // 2. [offset]: 몇 번째 인덱스부터 보낼지
+                // 3. [count]: 몇 개의 byte를 보낼지
+                // 즉, data 전체를 처음부터 끝까지 보내라
+                stream.Write(data, 0, data.Length); // data 배열 전체를 Client에게 보냄.
+
+                // NetworkStream에서는 Write 시점에 대부분 즉시 전송되지만,
+                // 송신 처리 완료 의미를 명확히 하기 위해 Flush를 호출한다. 
+                stream.Flush(); // 남은 버퍼가 있으면 즉시 밀어냄.
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Console Error Log 출력
+                Console.WriteLine($"[TCP SEND ERROR] {ex.Message}");
+
+                // 사용자 MessageBox 출력
+                MessageBox.Show(
+                $"TCP Send Failed\n\n{ex.Message}",
+                "TCP ERROR",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+
+                return false;
             }
 
         }
@@ -132,8 +183,7 @@ namespace Toruss_V3_Test_Server.Services
         }
 
         /// <summary>
-        /// [TcpStop()]
-        /// TCP 서버 종료
+        /// [TcpStop()]: TCP 서버 종료
         /// </summary>
         public void TcpStop()
         {
